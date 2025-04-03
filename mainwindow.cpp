@@ -14,7 +14,7 @@
 
 static const uint16_t MODBUS_BASE = 40001;
 
-// Implementation of ChannelsDialog
+//Implementation of ChannelsDialog
 ChannelsDialog::ChannelsDialog(QMap<int,int>* modbusData, QWidget *parent)
     : QDialog(parent), m_modbusData(modbusData)
 {
@@ -27,12 +27,12 @@ ChannelsDialog::ChannelsDialog(QMap<int,int>* modbusData, QWidget *parent)
     setLayout(layout);
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &ChannelsDialog::updateTable);
-    m_timer->start(10); // 100 Hz update
+    m_timer->start(10); //100 Hz update
     initializeChannels();
 }
 
 void ChannelsDialog::initializeChannels() {
-    // Fill channel information. Adjust as necessary.
+    //Fill channel information. Adjust as necessary.
     m_channels.append({0,  "Flow Pressure",         40008});
     m_channels.append({1,  "Test Pressure",         40009});
     m_channels.append({2,  "Velocity Pressure",     40010});
@@ -82,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setupUi();
 
-    // Setup servo port combo
+    //Setup servo port combo
     ui->servoPortCombo->clear();
     const auto servoPorts = QSerialPortInfo::availablePorts();
     for (const QSerialPortInfo &info : servoPorts) {
@@ -94,26 +94,26 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->servoConnectButton, &QPushButton::clicked,
             this, &MainWindow::onServoConnectButtonClicked);
 
-    // Modbus Connections
+    //Modbus Connections
     connect(serialPort, &QSerialPort::readyRead, this, &MainWindow::onSerialDataReceived);
     connect(updateTimer, &QTimer::timeout, this, &MainWindow::onUpdateTimer);
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::onConnectButtonClicked);
     connect(ui->writeButton, &QPushButton::clicked, this, &MainWindow::writeRegister);
     connect(ui->readButton, &QPushButton::clicked, this, &MainWindow::readRegisters);
 
-    // Autosequence Controls
+    //Autosequence Controls
     connect(ui->startSequenceButton, &QPushButton::clicked, this, &MainWindow::runAutoSequence);
     connect(ui->stopSequenceButton, &QPushButton::clicked, this, &MainWindow::stopAutoSequence);
     connect(sequenceTimer, &QTimer::timeout, this, &MainWindow::onSequenceTimerTick);
 
     updateTimer->setInterval(1000);
 
-    // Initialize polling of all registers
+    //Initialize polling of all registers
     allRegisters = ModbusRegisters::getRegisters().keys();
     currentPollIndex = 0;
     currentPollRegister = allRegisters.isEmpty() ? -1 : allRegisters.first();
 
-    // Note: Duplicate signal connections have been removed.
+    //Note: Duplicate signal connections have been removed.
 }
 
 MainWindow::~MainWindow()
@@ -183,12 +183,12 @@ QByteArray MainWindow::createModbusRequest(uint8_t function, uint16_t registerAd
                                            uint16_t numRegisters, uint16_t value)
 {
     QByteArray request;
-    // Use slave ID 0x1C.
+    //Use slave ID 0x1C.
     request.append(static_cast<char>(0x1C));
     request.append(static_cast<char>(function));
 
-    // Subtract MODBUS_BASE (40001) from the register.
-    uint16_t adjustedReg = registerAddr - MODBUS_BASE; // e.g. 40016 becomes 15
+    //Subtract MODBUS_BASE (40001) from the register.
+    uint16_t adjustedReg = registerAddr - MODBUS_BASE; //e.g. 40016 becomes 15
     request.append(static_cast<char>((adjustedReg >> 8) & 0xFF));
     request.append(static_cast<char>(adjustedReg & 0xFF));
 
@@ -325,7 +325,7 @@ QByteArray MainWindow::createMaestroCommand(int channel, int pwmValue)
     return command;
 }
 
-// --- Servo Control Slots (renamed for auto-connection) ---
+//--- Servo Control Slots (renamed for auto-connection) ---
 
 void MainWindow::on_pwm1000Button_clicked()
 {
@@ -380,9 +380,9 @@ void MainWindow::on_incrementButton_clicked()
 void MainWindow::onServoConnectButtonClicked()
 {
     if (!servoPort->isOpen()) {
-        // Use the QComboBox "servoPortCombo" from your UI for the servo port.
+        //Use the QComboBox "servoPortCombo" from your UI for the servo port.
         servoPort->setPortName(ui->servoPortCombo->currentText());
-        servoPort->setBaudRate(9600);  // Adjust the baud rate as needed.
+        servoPort->setBaudRate(9600);  //Adjust the baud rate as needed.
         servoPort->setDataBits(QSerialPort::Data8);
         servoPort->setParity(QSerialPort::NoParity);
         servoPort->setStopBits(QSerialPort::OneStop);
@@ -402,24 +402,24 @@ void MainWindow::onSequenceTimerTick()
 {
     const int totalPwmSteps = ((2000 - 1000) / 10) + 1;
     if (currentSequenceStep == 0) {
-        // Step 0: Set register 40006 to 1.
+        //Step 0: Set register 40006 to 1.
         serialPort->write(createModbusRequest(0x06, 40006, 1, 1));
         ui->binaryDisplay->append("Autosequence Step 0: Set register 40006 to 1");
         currentSequenceStep = 1;
-        // Wait 1 second before moving to the next step.
+        //Wait 1 second before moving to the next step.
         QTimer::singleShot(1000, this, SLOT(onSequenceTimerTick()));
     } else if (currentSequenceStep == 1) {
-        // Step 1: Set PWM to 1000 and hold 15 seconds.
+        //Step 1: Set PWM to 1000 and hold 15 seconds.
         currentServoPWM = 1000;
         servoPort->write(createMaestroCommand(0, currentServoPWM));
         ui->binaryDisplay->append("Autosequence Step 1: Set PWM to 1000");
         currentSequenceStep = 2;
         updateTimer->setInterval(50);
         updateTimer->start();
-        // Wait 15 seconds before capturing data.
+        //Wait 15 seconds before capturing data.
         QTimer::singleShot(15000, this, SLOT(captureAndDisablePolling()));
     } else if (currentSequenceStep < totalPwmSteps + 1) {
-        // Steps 2 to totalPwmSteps: increment PWM by 10, hold 5 seconds.
+        //Steps 2 to totalPwmSteps: increment PWM by 10, hold 5 seconds.
         currentServoPWM = 1000 + (currentSequenceStep - 1) * 10;
         servoPort->write(createMaestroCommand(0, currentServoPWM));
         ui->binaryDisplay->append(QString("Autosequence Step %1: Set PWM to %2")
@@ -428,10 +428,10 @@ void MainWindow::onSequenceTimerTick()
         currentSequenceStep++;
         updateTimer->setInterval(50);
         updateTimer->start();
-        // Wait 5 seconds before capturing data.
+        //Wait 5 seconds before capturing data.
         QTimer::singleShot(5000, this, SLOT(captureAndDisablePolling()));
     } else if (currentSequenceStep == totalPwmSteps + 1) {
-        // Final Step: Capture data, then set register 40006 to 0 and reset PWM.
+        //Final Step: Capture data, then set register 40006 to 0 and reset PWM.
         captureAndDisablePolling();
         serialPort->write(createModbusRequest(0x06, 40006, 1, 0));
         ui->binaryDisplay->append("Autosequence Final Step: Set register 40006 to 0");
@@ -446,7 +446,7 @@ void MainWindow::captureAndDisablePolling()
 {
     onDataLogTimerTick();
     updateTimer->stop();
-    // Delay a short moment (100ms) then trigger the next sequence step.
+    //Delay a short moment (100ms) then trigger the next sequence step.
     QTimer::singleShot(100, this, SLOT(onSequenceTimerTick()));
 }
 
@@ -480,7 +480,7 @@ void MainWindow::runAutoSequence()
     sequenceRunning = true;
     currentSequenceStep = 0;
 
-    // Retrieve metadata from UI fields:
+    //Retrieve metadata from UI fields:
     QString csvFileName = ui->fileNameLineEdit->text();
     if(csvFileName.isEmpty()) {
         csvFileName = "autosequence_log.csv";
@@ -488,20 +488,20 @@ void MainWindow::runAutoSequence()
     QString serialNumber = ui->serialNumberLineEdit->text();
     QString csvType = ui->csvTypeComboBox->currentText();
 
-    // Open the CSV file using the specified (or default) file name.
+    //Open the CSV file using the specified (or default) file name.
     dataLogFile = new QFile(csvFileName);
     if (dataLogFile->open(QIODevice::WriteOnly | QIODevice::Text)) {
         dataLogStream = new QTextStream(dataLogFile);
 
-        // Write metadata as header comments (optional):
+        //Write metadata as header comments (optional):
         *dataLogStream << "# Serial Number: " << serialNumber << "\n";
         *dataLogStream << "# CSV Type: " << csvType << "\n";
 
-        // Write the column header row.
+        //Write the column header row.
         auto regs = ModbusRegisters::getRegisters();
         QStringList header;
         header << "PWM" << "Timestamp";
-        // Use the register name instead of the register number.
+        //Use the register name instead of the register number.
         for (auto it = regs.begin(); it != regs.end(); ++it) {
             header << it.value().name;
         }
@@ -510,7 +510,7 @@ void MainWindow::runAutoSequence()
     } else {
         QMessageBox::warning(this, "Log Error", "Unable to open CSV log file for writing.");
     }
-    // Kick off the autosequence immediately.
+    //Kick off the autosequence immediately.
     QTimer::singleShot(0, this, SLOT(onSequenceTimerTick()));
 }
 
