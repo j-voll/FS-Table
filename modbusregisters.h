@@ -17,7 +17,7 @@ public:
     static QMap<int, ModbusRegister> getRegisters() {
         QMap<int, ModbusRegister> registers;
 
-        // Example definitions (adjust as needed):
+        //Example definitions (adjust as needed):
         registers[40002] = {"Servo Mode", "", "0=Test pressure mode, 1=Flow mode", 1, false};
         registers[40003] = {"Intake/Exhaust", "", "0=Intake, 1=Exhaust", 1, false};
         registers[40004] = {"AutoZero Now", "", "1=Autozero all channels now", 1, false};
@@ -43,10 +43,10 @@ public:
         registers[40024] = {"Test Pressure Setting", "Current Units", "Pressure * 100", 1, false};
         registers[40025] = {"Flow Rate Setting", "Current Units", "Flow rate * 10", 1, false};
         registers[40026] = {"Leakage", "Current Units", "Leakage flow rate * 10", 1, false};
-        // ... add other registers as needed...
+        //... add other registers as needed...
 
         return registers;
     }
 };
 
-#endif // MODBUSREGISTERS_H
+#endif //MODBUSREGISTERS_H
